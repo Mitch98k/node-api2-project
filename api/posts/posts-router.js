@@ -32,7 +32,8 @@ router.post('/api/posts', async (req, res) => {
         if (!title || !contents) {
             res.status(400).json({ messge: "Please provide title and constents for the post" });
         } else {
-            const newPost = await Posts.insert({title, contents});
+            const post = await Posts.insert({title, contents});
+            const newPost = await Posts.findById(post.id);
             res.status(201).json(newPost);
         }
     } catch(err) {
@@ -48,10 +49,11 @@ router.put('/api/posts/:id', async (req, res) => {
         res.status(400).json({ message: "PLease provide title and contents for the post" });
     } else {
         try {
-            const updPost = await Posts.update(id, {title, contents});
-            if (!updPost) {
+            const post = await Posts.update(id, {title, contents});
+            if (!post) {
                 res.status(404).json({ message: "The post with the specified ID does not exist" });
             } else {
+                const updPost = await Posts.findById(id);
                 res.status(200).json(updPost);
             }
         } catch(err) {
@@ -61,16 +63,32 @@ router.put('/api/posts/:id', async (req, res) => {
 });
 
 router.delete('/api/posts/:id', async (req, res) => {
-    const {id} = req.body;
+    const {id} = req.params;
     try {
-        const delPost = await Posts.remove(id);
-        if (!delPost) {
+        const post = await Posts.findById(id);
+        if (!post) {
             res.status(404).json({ message: "The post with the specified ID does not exist" });
         } else {
-            res.status(204).json(delPost);
+            await Posts.remove(id);
+            res.json(post);
         }
     } catch(err) {
         res.status(500).json({ message: "The post could not be removed" });
+    }
+});
+
+router.get('/api/posts/:id/comments', async (req, res) => {
+    const {id} = req.params;
+    try {
+        const post = await Posts.findById(id);
+        if (!post) {
+            res.status(404).json({ message: "The post with the specified ID does not exist" });
+        } else {
+            const comments = await Posts.findPostComments(id);
+            res.status(200).json(comments);
+        }
+    } catch(err) {
+        res.status(500).json({ message: "The comments information could not be retrieved" });
     }
 });
 
